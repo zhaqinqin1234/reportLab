@@ -3,6 +3,8 @@ from reportlab.platypus import Table, Image, Paragraph
 from reportlab.lib import colors
 from reportlab.lib.styles import ParagraphStyle
 
+import csv
+
 def genBodyTable(width, height):
     widthList =[
         width * 10/100,  # left "PADDING"
@@ -21,11 +23,12 @@ def genBodyTable(width, height):
 
     color =colors.HexColor('#003363')
     leftPadding = 20 
+    tablesWidth = widthList[1]- leftPadding
 
     res = Table([
         ['','Offer', ''],
-        ['',_genContactsTable(widthList[1],heightList[1]), ''],
-        ['',_genPriceListTable(widthList[1],heightList[2]), ''],
+        ['',_genContactsTable(tablesWidth,heightList[1]), ''],
+        ['',_genPriceListTable(tablesWidth,heightList[2]), ''],
         ['',_genDescriptionParas(), ''],
         ['',_genAboutTable(widthList[1], heightList[4]), ''],
     ], widthList,
@@ -34,7 +37,7 @@ def genBodyTable(width, height):
 
 
     res.setStyle([
-        ('GRID', (0,0),(-1,-1), 1, 'red'),
+        #('GRID', (0,0),(-1,-1), 1, 'red'),
         ('LINEBELOW', (1,0), (1,1), 1, color),
         ('LINEBELOW', (1,3), (1,3), 1, color),
 
@@ -49,15 +52,135 @@ def genBodyTable(width, height):
     ])
     return res
 
+#Contact informatiion after header
 def _genContactsTable(width, height):
+    widthList=[
+        width *30 /100,
+        width *30 /100,
+        width *20 /100,
+        width *20 /100,
+    ]
+    heightList =[
+        height * 25 /100,
+        height * 25 /100,
+        height * 25 /100,
+        height * 25 /100,
+       
+    ]
+    dataList =[]
+    with open(r'C:\Users\qinqin.zha\OneDrive - NeoGenomics Laboratories, Inc\Documents\QZ_JR_presentations -NSM\BI\PalmHotelProject\PalmsHotel_PDFResources\resources\tabledata.txt', 'r') as file: 
+        for line in file:
+            if line != '\n':
+                dataList.append(line.replace('\n','')) # problem 2
+    matrix =[
+        ['', '','',''],
+        ['', '','',''],
+        ['', '','',''],
+        ['', '','',''],
+       
+    ]
 
+    idx=0
+    for ridx, row in enumerate(matrix):
+        for cidx, col in enumerate(row):
+            matrix[ridx][cidx]= dataList[idx]
+            idx +=1 # problem 3 and 4
+            if idx == len(dataList):
+                break
+        if idx == len(dataList):
+            break
 
-    return 'CONTACT'
+    res =Table(matrix, widthList, heightList)
+    res.setStyle([
+        #('GRID', (0,0), (-1,-1), 1, 'red') ,
 
+        ('ALIGN', (3,0),(3,-1), 'RIGHT'),
+        ('RIGHTPADDING', (3,0),(3,-1), 20),
+        ('VALIGN', (0,0),(-1,-1), 'MIDDLE'),
 
+    ])
+    return res
+
+    
+
+#price table after contact table
 def _genPriceListTable(width, height):
-    return 'PRICES'
+    style =ParagraphStyle('titleprices')
+    style.fontSize=20
+    style.fontName= 'Helvetica-Bold'
+    style.spaceAfter = 15
 
+    titlePara = Paragraph('Details', style)
+
+    priceTable = _genPricesTable(width, height * 70/100)
+
+
+    elementsList =[titlePara, priceTable]
+    res = Table(
+        [
+            [elementsList]
+        ],
+        width, 
+        height)
+
+    res.setStyle([
+        # ('GRID', (0,0), (-1,-1), 1, 'red'),
+        ('LEFTPADDING',(0,0),(0,0),0),
+       ('BOTTOMPADDING',(0,0),(1,0),0),
+    ])
+    return res
+
+#load data from csv file
+
+def _genPricesTable(width, height):
+
+    matrix = []
+    with open(r'C:\Users\qinqin.zha\OneDrive - NeoGenomics Laboratories, Inc\Documents\QZ_JR_presentations -NSM\BI\PalmHotelProject\PalmsHotel_PDFResources\resources\pricesTable.csv', 'r') as file:
+        matrix =list(csv.reader(file))
+    if len(matrix) <2 or len(matrix[0]) !=6:
+        return Table([['no data']])
+
+    widthList=[
+        width * 20/100,
+        width * 20/100,
+        width * 25/100,
+        width * 15/100,
+        width * 10/100,
+        width * 10/100,
+
+    ]
+    rowCount = len(matrix)
+    res = Table(matrix,widthList, height/rowCount)
+    #r-red, g- green, b- blue, a -alpha (opacity)
+    color =colors.toColor('rgba(0, 115, 153, 0.9)')
+
+    res.setStyle([
+       # ('GRID', (0,0), (-1,-1), 1, 'red') ,
+        ('INNERGRID', (0,0), (-1,-1), 0.5, 'grey'),
+        ('BACKGROUND', (0,0), (-1, 0), color),
+        ('TEXTCOLOR', (0,0), (-1, 0), 'white'),
+        ('FONTSIZE', (0,0), (-1, 0), 12),
+        ('FONTNAME', (0,0), (-1, 0), 'Helvetica-Bold'),
+        ('ALIGN', (1,0), (-1, 0), 'CENTER'),
+        ('ALIGN', (1,1), (2, -1), 'CENTER'),
+        ('ALIGN', (5,1), (5, -1), 'RIGHT'),
+        ('VALIGN', (0,0), (-1, -1), 'MIDDLE'),
+        #('ROWBACKGROUNDs', (0,1),(-1,-1), ['antiquewhite', 'beige', colors.grey]) #not working, need to figuout
+
+    ])
+    for i in range(1, rowCount):
+        if i % 2 == 0:
+            bc=colors.antiquewhite
+        else:
+            bc=colors.beige
+
+        res.setStyle([
+            ('BACKGROUND', (0, i), (-1, i),bc)
+        ])
+    return res
+
+
+#Function for paragraph style and paragraph lists and html style.
 def _genDescriptionParas():
     paraList =[]
     para1Style= ParagraphStyle('para1d')
@@ -127,7 +250,7 @@ def _genAboutTable(width, height):
     height)
 
     res.setStyle(
-       [('GRID', (0,0), (-1,-1), 1, 'red') ,
+       [#('GRID', (0,0), (-1,-1), 1, 'red') ,
        ('LEFTPADDING',(0,0),(0,0),0),
        ('BOTTOMPADDING',(0,0),(1,0),0),
 
